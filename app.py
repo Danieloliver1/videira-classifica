@@ -5,73 +5,79 @@ import io
 from PIL import Image
 import numpy as np
 import pandas as pd
-import ploty.express as px
+import plotly.express as px
 
-@st.cache_resource
+@st.cache_resource(show_spinner="Carregando modelo...")
 def carrega_modelo():
-    url = 'https://drive.google.com/file/d/109cgIdRWfFVAWkhT3WWQlrSPQKl2tYjB'
-
-    gdown.download(url,'modelo_quantizado16bits.tflite')
-    interpreter =tf.life.Interpreter(modelo_path='modelo_quantizado16bits.tflite')
+    url = 'https://drive.google.com/uc?id=109cgIdRWfFVAWkhT3WWQlrSPQKl2tYjB'
+    output = 'modelo_quantizado16bits.tflite'
+    gdown.download(url, output, quiet=False)
+    
+    interpreter = tf.lite.Interpreter(model_path=output)
     interpreter.allocate_tensors()
-
     return interpreter
 
 def carrega_imagem():
-    uploaded_file = st.file_uploader('Arraste e solte uma imagem aqui ou clique para selecionar uma', type=['png','jpg','jpeg'])
+    uploaded_file = st.file_uploader(
+        'Arraste e solte uma imagem aqui ou clique para selecionar uma',
+        type=['png', 'jpg', 'jpeg']
+    )
 
     if uploaded_file is not None:
         image_data = uploaded_file.read()
-        image = Image.open(io.BytersIO(image_data))
+        image = Image.open(io.BytesIO(image_data)).convert("RGB")
 
-        st.image(image)
+        st.image(image, caption="Imagem carregada", use_column_width=True)
         st.success('Imagem foi carregada com sucesso')
 
-        image = np.array(image, dtype=np.float32)
-        image = image / 255.0
+        image = image.resize((224, 224))  # tamanho padrão comum
+        image = np.array(image, dtype=np.float32) / 255.0
         image = np.expand_dims(image, axis=0)
 
         return image
+    return None
 
 def previsao(interpreter, image):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
     interpreter.set_tensor(input_details[0]['index'], image)
-
     interpreter.invoke()
-
     output_data = interpreter.get_tensor(output_details[0]['index'])
+
     classes = ['BlackMeasles', 'BlackRot', 'HealthyGrapes', 'LeafBlight']
+    df = pd.DataFrame({
+        'classes': classes,
+        'probabilidades (%)': 100 * output_data[0]
+    })
 
-    df = pd.DataFrame()
-    df['classes'] = classes
-    df['probabilidades (%)'] = 100 * output_data[0]
-
-    fig = px.bar(df, y='classes', x = 'probabilidades (%)', 
-                 orientation = 'h',
-                 text='probabilidades (%)',
-                 title='Probabilidade de Classes de Doenças em Uvas')
-    st.ploty_chart(fig)
-
+    fig = px.bar(
+        df,
+        y='classes',
+        x='probabilidades (%)',
+        orientation='h',
+        text='probabilidades (%)',
+        title='Probabilidade de Classes de Doenças em Uvas'
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 def main():
-
     st.set_page_config(
-        page_title='classifica Folhas de Videira',
+        page_title='Classifica Folhas de Videira',
         page_icon='🍇',
     )
 
+    st.write('# Classifica Folhas de Videira! 🍇')
 
-st.write('# Classifica Folhas de Videira! 🍇')
+    # Carrega modelo 
+    interpreter = carrega_modelo()
+    
+    # Carrega imagem
+    image = carrega_imagem()
 
-#Carrega modelo 
-interpreter = carrega_modelo()
-#Carrega imagem
-image = carrega_imagem()
-#Classifica
-if image is not None:
-    previsao(interpreter, image)
+    # Classifica
+    if image is not None:
+        previsao(interpreter, image)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
