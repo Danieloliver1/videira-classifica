@@ -4,4 +4,4 @@ streamlit
 pillow
 requests
 plotly
-tensorflow
+tensorflow==2.13.0
