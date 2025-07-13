@@ -4,4 +4,4 @@ streamlit
 pillow
 gdown
 plotly
-tensorflow
+tensorflow-cpu
