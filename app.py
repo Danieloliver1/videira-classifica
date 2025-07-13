@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import pandas as pd
 import io
-import requests
+import gdown
 import plotly.express as px
 
 
@@ -13,17 +13,13 @@ import plotly.express as px
 
 @st.cache_resource(show_spinner="Carregando modelo...")
 def carrega_modelo():
-    url = 'https://huggingface.co/datasets/DanielOliver1/modelo_quantizado16bits/raw/main/modelo_quantizado16bits.tflite'
-    path = 'modelo_quantizado16bits.tflite'
-    st.info("Baixando modelo da Hugging Face...")
-    with open(path, 'wb') as f:
-        response = requests.get(url)
-        response.raise_for_status()
-        f.write(response.content)
-
-    interpreter = tf.lite.Interpreter(model_path=path)
+    url = 'https://drive.google.com/uc?id=109cgIdRWfFVAWkhT3WWQlrSPQKl2tYjB'
+    
+    gdown.download(url,'modelo_quantizado16bits.tflite')
+    interpreter = tf.lite.Interpreter(model_path='modelo_quantizado16bits.tflite')
     interpreter.allocate_tensors()
 
+    
     return interpreter
 
 

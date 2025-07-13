@@ -2,6 +2,6 @@ numpy
 pandas
 streamlit
 pillow
-requests
+gdown
 plotly
 tensorflow==2.13.0
